@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ErrandGo customer prototype</title>
+<style>
+:root{--bg:#fff8e6;--card:#ffffff;--ink:#1d3557;--mute:#5f6f86;--y:#ffc93c;--g:#1e9e5a;--r:#e63946;--line:#f0e3bd;--chip:#fff1c4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101b2c;--card:#1a2a42;--ink:#f4f1e6;--mute:#a4b2c7;--line:#2c3f5c;--chip:#2c3f5c}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 Nunito,"Trebuchet MS",system-ui,sans-serif;display:flex;justify-content:center}
+#app{width:100%;max-width:430px;min-height:100vh;padding:18px 16px 28px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:1.9rem;line-height:1.15;margin:0}h2{margin:0;font-size:1.4rem}p{margin:0}.mute{color:var(--mute);font-size:.9rem}
+.top{display:flex;align-items:center;gap:10px}.back{border:0;background:var(--chip);color:var(--ink);width:44px;height:44px;border-radius:50%;font-size:1.3rem;cursor:pointer}
+.steps{display:flex;gap:6px;flex:1}.steps i{height:8px;border-radius:4px;flex:1;background:var(--line)}.steps i.on{background:var(--g)}
+.big{border:0;border-radius:28px;padding:20px;font:inherit;font-size:1.25rem;font-weight:800;background:var(--y);color:#1d3557;cursor:pointer;width:100%;box-shadow:0 5px 0 #d9a520}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #d9a520}.big.g{background:var(--g);color:#fff;box-shadow:0 5px 0 #14733f}.big:disabled{opacity:.45}
+.card{background:var(--card);border-radius:24px;padding:14px;display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1}.em{font-size:2rem;width:48px;text-align:center}
+.qty{display:flex;align-items:center;gap:8px}.qty button{width:40px;height:40px;border-radius:50%;border:0;background:var(--chip);color:var(--ink);font-size:1.3rem;font-weight:800;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:8px 12px;font:inherit;cursor:pointer}
+.pick{border:3px solid transparent;background:var(--card);color:var(--ink);border-radius:22px;padding:14px;font:inherit;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center;width:100%}
+.pick.sel{border-color:var(--g);background:var(--chip)}
+.mascot{font-size:3rem;animation:b 1.8s ease-in-out infinite}@keyframes b{50%{transform:translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.mascot{animation:none}}
+.sum{display:flex;justify-content:space-between}.tot{font-weight:800;font-size:1.2rem;border-top:2px dashed var(--line);padding-top:8px}
+.st{font-size:1.5rem;width:36px;text-align:center}.bar{height:14px;border-radius:7px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--g);transition:width .6s}
+.map{height:130px;border-radius:20px;background:repeating-linear-gradient(45deg,var(--chip),var(--chip) 12px,var(--line) 12px,var(--line) 24px);position:relative;overflow:hidden}
+.map b{position:absolute;font-size:1.8rem;transition:left 1s,top 1s}
+.sub{background:var(--chip);border-radius:18px;padding:12px;display:grid;gap:8px}.sub .row{gap:8px}.sub button{flex:1;border:0;border-radius:14px;padding:12px;font:inherit;font-weight:800;cursor:pointer}
+.pin{font-size:2.4rem;font-weight:800;letter-spacing:.3em;text-align:center}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+</style></head><body><div id="app"></div>
+<script>
+var CAT={Tomatoes:['🍅',12],Rice:['🍚',45],Bread:['🍞',15],Eggs:['🥚',38],Water:['💧',10],Paracetamol:['💊',8]};
+var SHOPS=[['Accra Mall','🏬','Tetteh Quarshie'],['Melcom','🛍️','Osu'],['Shoprite','🛒','Achimota'],['Makola Market','🧺','Central Accra'],['Any shop near me','📍','Closest open store']];
+var S={scr:'home',items:[{n:'Tomatoes',q:2},{n:'Bread',q:1}],shop:2,pay:0,prog:0,st:[],sub:false,done:false};
+var $=document.getElementById('app'),T=[];
+function go(s){T.forEach(clearTimeout);T=[];S.scr=s;draw();if(s=='track')run()}
+function steps(n){return'<div class="steps">'+[1,2,3,4].map(function(i){return'<i class="'+(i<=n?'on':'')+'"></i>'}).join('')+'</div>'}
+function top(n,b){return'<div class="top"><button class="back" aria-label="Back" onclick="go(\''+b+'\')">←</button>'+steps(n)+'</div>'}
+function est(){var t=0;S.items.forEach(function(i){t+=CAT[i.n][1]*i.q});return t}
+function chg(n,d){var it=S.items[n];it.q+=d;if(it.q<1)S.items.splice(n,1);draw()}
+function add(n){var f=S.items.filter(function(i){return i.n==n})[0];f?f.q++:S.items.push({n:n,q:1});draw()}
+function draw(){var h='';
+if(S.scr=='home'){h='<div class="mascot" aria-hidden="true">🛵</div><h1>Akwaaba! What do you need today?</h1><p class="mute">We shop. We bring it to your door.</p><button class="big" onclick="go(\'list\')">What do you need?</button><div class="chips">'+['Groceries','Pharmacy','Market','Household'].map(function(c){return'<button class="chip" onclick="go(\'list\')">'+c+'</button>'}).join('')+'</div>'}
+if(S.scr=='list'){h=top(1,'home')+'<h2>Your list</h2><div class="card">'+(S.items.length?S.items.map(function(it,i){return'<div class="row"><span class="em">'+CAT[it.n][0]+'</span><span class="grow"><b>'+it.n+'</b><br><span class="mute">GH₵ '+CAT[it.n][1]+' each</span></span><div class="qty"><button aria-label="Less" onclick="chg('+i+',-1)">−</button><b>'+it.q+'</b><button aria-label="More" onclick="chg('+i+',1)">+</button></div></div>'}).join(''):'<p class="mute">Your list is empty. Tap an item below to add it.</p>')+'</div><p class="mute">Tap to add</p><div class="chips">'+Object.keys(CAT).map(function(k){return'<button class="chip" onclick="add(\''+k+'\')">'+CAT[k][0]+' '+k+'</button>'}).join('')+'</div><button class="big" '+(S.items.length?'':'disabled')+' onclick="go(\'shop\')">Next: where to buy</button>'}
+if(S.scr=='shop'){h=top(2,'list')+'<h2>Where should we buy?</h2>'+SHOPS.map(function(s,i){return'<button class="pick '+(S.shop==i?'sel':'')+'" onclick="S.shop='+i+';draw()"><span class="em">'+s[1]+'</span><span><b>'+s[0]+'</b><br><span class="mute">'+s[2]+'</span></span></button>'}).join('')+'<button class="big" onclick="go(\'pay\')">Next: see the price</button>'}
+if(S.scr=='pay'){var e=est();h=top(3,'shop')+'<h2>Price and payment</h2><div class="card"><div class="sum"><span>Items (estimate)</span><span>GH₵ '+e+'</span></div><div class="sum"><span>Delivery</span><span>GH₵ 15</span></div><div class="sum"><span>Service</span><span>GH₵ 5</span></div><div class="sum tot"><span>Total</span><span>GH₵ '+(e+20)+'</span></div><p class="mute">You only pay the real receipt price. Any difference is refunded.</p></div>'+['MTN MoMo','Telecel Cash','AirtelTigo Money','Card','Cash on delivery'].map(function(p,i){return'<button class="pick '+(S.pay==i?'sel':'')+'" onclick="S.pay='+i+';draw()"><b>'+p+'</b></button>'}).join('')+'<button class="big g" onclick="go(\'track\')">Pay and send the runner</button>'}
+if(S.scr=='track'){h=top(4,'pay').replace('onclick="go(\'pay\')"','onclick="go(\'home\')"')+'<h2>'+(S.done?'Delivered! 🎉':S.prog<2?'Kofi is shopping':'Kofi is on the way')+'</h2><div class="bar"><i style="width:'+[20,50,80,100][S.prog]+'%"></i></div><p class="mute">'+['Accepted','Shopping','On the way','Delivered'][S.prog]+' · '+SHOPS[S.shop][0]+'</p><div class="map" aria-hidden="true"><b style="left:'+[10,30,55,80][S.prog]+'%;top:'+[60,35,50,30][S.prog]+'%">🛵</b><b style="left:85%;top:55%">🏠</b></div><div class="card">'+S.items.map(function(it,i){var s=S.st[i]||'⏳';return'<div class="row"><span class="st">'+s+'</span><span class="grow"><b>'+it.n+'</b> ×'+it.q+'</span></div>'}).join('')+'</div>'+(S.sub?'<div class="sub"><b>Bread is finished at this shop.</b><span class="mute">Brown loaf, GH₵ 18. Okay?</span><div class="row"><button style="background:var(--g);color:#fff" onclick="subAns(1)">Approve</button><button style="background:var(--card);color:var(--ink)" onclick="subAns(0)">Skip</button></div></div>':'')+(S.prog>=2&&!S.sub?'<div class="card"><p class="mute">Give this PIN to the runner</p><div class="pin">4821</div></div>':'')+(S.done?'<button class="big" onclick="reset()">Order again</button>':'')}
+$.innerHTML=h}
+function run(){S.prog=1;S.st=[];S.sub=false;S.done=false;draw();
+ T.push(setTimeout(function(){S.st[0]='✅';draw()},1800));
+ T.push(setTimeout(function(){var b=S.items.map(function(i){return i.n}).indexOf('Bread');if(b>-1&&b!=0){S.st[b]='❌';S.sub=true}else{S.st[1]='✅'}draw()},3600));
+ if(S.items.length>2)T.push(setTimeout(function(){for(var i=1;i<S.items.length;i++)if(!S.st[i])S.st[i]='✅';draw()},3000));
+ T.push(setTimeout(function(){if(!S.sub)fin()},5200))}
+function subAns(a){var b=S.st.indexOf('❌');S.st[b]=a?'🔁':'⏭️';S.sub=false;draw();T.push(setTimeout(fin,1500))}
+function fin(){S.items.forEach(function(x,i){if(!S.st[i])S.st[i]='✅'});S.prog=2;draw();T.push(setTimeout(function(){S.prog=3;S.done=true;draw()},2500))}
+function reset(){S.st=[];S.prog=0;go('home')}
+draw();
+</script></body></html>
